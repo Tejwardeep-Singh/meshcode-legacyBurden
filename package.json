@@ -1,0 +1,127 @@
+{
+  "name": "meshcode",
+  "displayName": "MeshCode",
+  "description": "Offline-first LAN collaborative coding for VS Code with local Yjs update persistence and automatic reconnect.",
+  "version": "0.2.0",
+  "publisher": "meshcode",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "meshcode.openTerminal",
+        "title": "MeshCode: Open Terminal"
+      },
+      {
+        "command": "meshcode.createRoom",
+        "title": "MeshCode: Create Room"
+      },
+      {
+        "command": "meshcode.discoverRooms",
+        "title": "MeshCode: Discover LAN Rooms"
+      },
+      {
+        "command": "meshcode.showStatus",
+        "title": "MeshCode: Show Status"
+      },
+      {
+        "command": "meshcode.leaveRoom",
+        "title": "MeshCode: Leave Room"
+      },
+      {
+        "command": "meshcode.reconnect",
+        "title": "MeshCode: Reconnect to Room"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "meshcode",
+          "title": "MeshCode",
+          "icon": "media/meshcode.svg"
+        }
+      ]
+    },
+    "views": {
+      "meshcode": [
+        {
+          "id": "meshcode.participants",
+          "name": "Participants"
+        },
+        {
+          "id": "meshcode.sharedFiles",
+          "name": "Shared Files"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "MeshCode",
+      "properties": {
+        "meshcode.displayName": {
+          "type": "string",
+          "default": "Developer",
+          "description": "Name shown to collaborators."
+        },
+        "meshcode.excludedFolders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "node_modules",
+            ".git",
+            ".next",
+            "dist",
+            "build",
+            "coverage",
+            ".turbo",
+            "vendor"
+          ]
+        },
+        "meshcode.excludedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".env",
+            ".env.local",
+            ".env.*.local",
+            "*.pem",
+            "*.key"
+          ]
+        },
+        "meshcode.port": {
+          "type": "number",
+          "default": 48765,
+          "description": "Local LAN WebSocket room port."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "yjs": "^13.6.20",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.90.0",
+    "@types/ws": "^8.5.13",
+    "@vscode/vsce": "^3.2.1",
+    "typescript": "^5.7.2"
+  }
+}
