@@ -62,7 +62,8 @@ class WorkspaceSync {
                 this.client.sendFileOperation("rename", oldPath, newPath);
         } }));
     }
-    relative(uri) { const folder = vscode.workspace.getWorkspaceFolder(uri); return folder ? path.relative(folder.uri.fsPath, uri.fsPath).replace(/\\/g, "/") : undefined; }
+    relativePath(uri) { const folder = vscode.workspace.getWorkspaceFolder(uri); return folder ? path.relative(folder.uri.fsPath, uri.fsPath).replace(/\\/g, "/") : undefined; }
+    relative(uri) { return this.relativePath(uri); }
     allowed(relative) { const cfg = vscode.workspace.getConfiguration("meshcode"); const folders = cfg.get("excludedFolders", []); const files = cfg.get("excludedFiles", []); const parts = relative.split("/"); if (parts.some(part => folders.includes(part)))
         return false; const base = parts.at(-1) ?? ""; if (files.some(pattern => pattern.startsWith("*.") ? base.endsWith(pattern.slice(1)) : base === pattern))
         return false; return EXT.has(path.extname(relative).toLowerCase()); }
@@ -145,7 +146,7 @@ class WorkspaceSync {
     publishPresence(editor = vscode.window.activeTextEditor) { if (!editor) {
         this.client.sendPresence("", 0, 0, false);
         return;
-    } const relative = this.relative(editor.document.uri) ?? ""; const position = editor.selection.active; this.client.sendPresence(relative, position.line, position.character, true); }
+    } const relative = this.relative(editor.document.uri) ?? ""; const selection = editor.selection; const position = selection.active; this.client.sendPresence(relative, position.line, position.character, true, { startLine: selection.start.line, startColumn: selection.start.character, endLine: selection.end.line, endColumn: selection.end.character }); this.client.sendActiveFile(relative); }
     dispose() { for (const subscription of this.subscriptions)
         subscription.dispose(); }
 }

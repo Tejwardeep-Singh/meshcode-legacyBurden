@@ -93,6 +93,7 @@ class LanRoomClient {
                 this.connectedResolve?.();
                 this.connectedResolve = undefined;
                 this.onConnectionChanged?.(true);
+                this.emit(message);
                 for (const [docPath, doc] of this.docs)
                     this.send({ type: "update", path: docPath, update: Buffer.from(Y.encodeStateAsUpdate(doc)).toString("base64") });
             }
@@ -100,11 +101,11 @@ class LanRoomClient {
                 Y.applyUpdate(this.getDoc(message.path), Buffer.from(message.update, "base64"), "remote");
                 this.emit(message);
             }
-            else if (message.type === "presence") {
+            else if ("peer" in message) {
                 this.peers = [...this.peers.filter(p => p.clientId !== message.peer.clientId), message.peer];
                 this.emit(message);
             }
-            else if (message.type === "peer-left") {
+            else if (message.type === "participant-left") {
                 this.peers = this.peers.filter(p => p.clientId !== message.clientId);
                 this.emit(message);
             }
@@ -135,7 +136,11 @@ class LanRoomClient {
         });
         return doc;
     }
-    sendPresence(file, line, column, active) { this.send({ type: "presence", file, line, column, active }); }
+    sendPresence(file, line, column, active, selection = { startLine: line, startColumn: column, endLine: line, endColumn: column }) { this.send({ type: "presence-update", file, line, column, active, selection, idle: false }); }
+    sendActiveFile(file) { this.send({ type: "active-file-change", file }); }
+    sendCursor(file, line, column, selection) { this.send({ type: "cursor-update", file, line, column, selection }); }
+    sendIdle(idle) { this.send({ type: "participant-idle", idle }); }
+    heartbeat() { this.send({ type: "heartbeat" }); }
     sendFileOperation(operation, docPath, newPath) { this.send({ type: "file-op", operation, path: docPath, newPath }); }
     send(message) { if (this.socket?.readyState === ws_1.default.OPEN)
         this.socket.send(JSON.stringify(message)); }

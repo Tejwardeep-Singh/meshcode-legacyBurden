@@ -31,10 +31,11 @@ export class LanRoomClient {
     socket.on("message", raw => {
       let message: ServerMessage; try { message = JSON.parse(raw.toString()) as ServerMessage; } catch { return; }
       if (message.type === "welcome") { clearTimeout(timeout); this.peers = message.peers.filter(p => p.clientId !== this.clientId); this.reconnectDelay = 1000; this.connectedResolve?.(); this.connectedResolve = undefined; this.onConnectionChanged?.(true);
+        this.emit(message);
         for (const [docPath, doc] of this.docs) this.send({ type: "update", path: docPath, update: Buffer.from(Y.encodeStateAsUpdate(doc)).toString("base64") });
       } else if (message.type === "update") { Y.applyUpdate(this.getDoc(message.path), Buffer.from(message.update, "base64"), "remote"); this.emit(message); }
-      else if (message.type === "presence") { this.peers = [...this.peers.filter(p => p.clientId !== message.peer.clientId), message.peer]; this.emit(message); }
-      else if (message.type === "peer-left") { this.peers = this.peers.filter(p => p.clientId !== message.clientId); this.emit(message); }
+      else if ("peer" in message) { this.peers = [...this.peers.filter(p => p.clientId !== message.peer.clientId), message.peer]; this.emit(message); }
+      else if (message.type === "participant-left") { this.peers = this.peers.filter(p => p.clientId !== message.clientId); this.emit(message); }
       else this.emit(message);
     });
     socket.once("error", error => { clearTimeout(timeout); this.connectedReject?.(error as Error); });
@@ -51,7 +52,11 @@ export class LanRoomClient {
     });
     return doc;
   }
-  sendPresence(file: string, line: number, column: number, active: boolean): void { this.send({ type: "presence", file, line, column, active }); }
+  sendPresence(file: string, line: number, column: number, active: boolean, selection = { startLine: line, startColumn: column, endLine: line, endColumn: column }): void { this.send({ type: "presence-update", file, line, column, active, selection, idle: false }); }
+  sendActiveFile(file: string): void { this.send({ type: "active-file-change", file }); }
+  sendCursor(file: string, line: number, column: number, selection: { startLine: number; startColumn: number; endLine: number; endColumn: number }): void { this.send({ type: "cursor-update", file, line, column, selection }); }
+  sendIdle(idle: boolean): void { this.send({ type: "participant-idle", idle }); }
+  heartbeat(): void { this.send({ type: "heartbeat" }); }
   sendFileOperation(operation: "delete" | "rename", docPath: string, newPath?: string): void { this.send({ type: "file-op", operation, path: docPath, newPath }); }
   private send(message: ClientMessage): void { if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(message)); }
   close(): void { this.intentionallyClosed = true; if (this.reconnectTimer) clearTimeout(this.reconnectTimer); this.reconnectTimer = undefined; this.socket?.close(); for (const doc of this.docs.values()) doc.destroy(); this.docs.clear(); }
